@@ -242,30 +242,47 @@ function getAuthError(code) {
 // Username
 async function saveUsername() {
     const username = $('usernameInput').value.trim().toLowerCase();
+    const btn = $('saveUsernameBtn');
+    const hint = $('usernameHint');
     
     if (!/^[a-z0-9_]{5,20}$/.test(username)) {
-        $('usernameHint').textContent = 'Только буквы, цифры и _ (5-20 символов)';
-        $('usernameHint').style.color = 'var(--danger)';
+        hint.textContent = 'Только буквы, цифры и _ (5-20 символов)';
+        hint.style.color = 'var(--danger)';
         return;
     }
     
-    // Check if username exists
-    const snap = await db.ref('usernames/' + username).once('value');
-    if (snap.exists()) {
-        $('usernameHint').textContent = 'Этот username уже занят';
-        $('usernameHint').style.color = 'var(--danger)';
-        return;
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+        
+        // Check if username exists
+        const snap = await db.ref('usernames/' + username).once('value');
+        if (snap.exists()) {
+            hint.textContent = 'Этот username уже занят';
+            hint.style.color = 'var(--danger)';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Сохранить';
+            return;
+        }
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+        
+        // Save username
+        await db.ref('usernames/' + username).set(currentUser.uid);
+        await saveUserData({
+            username: username,
+            displayName: currentUser.email.split('@')[0]
+        });
+        
+        showScreen('chatScreen');
+        initApp();
+    } catch (error) {
+        console.error('Error saving username:', error);
+        hint.textContent = 'Ошибка сохранения: ' + error.message;
+        hint.style.color = 'var(--danger)';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Сохранить';
     }
-    
-    // Save username
-    await db.ref('usernames/' + username).set(currentUser.uid);
-    await saveUserData({
-        username: username,
-        displayName: currentUser.email.split('@')[0]
-    });
-    
-    showScreen('chatScreen');
-    initApp();
 }
 
 
