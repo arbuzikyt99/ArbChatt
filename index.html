@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ArbChat - Мессенджер</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <div class="background"></div>
@@ -13,59 +14,274 @@
     <!-- Auth Screen -->
     <div id="authScreen" class="screen">
         <div class="glass-card auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-comments"></i>
+            </div>
             <h1 class="logo">ArbChat</h1>
             <p class="subtitle">Безопасный мессенджер</p>
             
             <div id="loginForm">
-                <input type="email" id="email" class="glass-input" placeholder="Email">
-                <input type="password" id="password" class="glass-input" placeholder="Пароль">
-                <button id="loginBtn" class="glass-btn primary">Войти</button>
-                <button id="registerBtn" class="glass-btn">Регистрация</button>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" class="glass-input" placeholder="Email">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" class="glass-input" placeholder="Пароль">
+                </div>
+                <button id="loginBtn" class="glass-btn primary full-width">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+                <button id="registerBtn" class="glass-btn full-width">
+                    <i class="fas fa-user-plus"></i> Регистрация
+                </button>
             </div>
             <p id="authError" class="error"></p>
         </div>
     </div>
 
-    <!-- Chat Screen -->
+    <!-- Main Chat Screen -->
     <div id="chatScreen" class="screen hidden">
-        <div class="chat-container">
+        <div class="app-container">
             <!-- Sidebar -->
-            <div class="glass-card sidebar">
+            <div class="sidebar glass-card">
+                <!-- User Profile Header -->
                 <div class="sidebar-header">
-                    <h2>ArbChat</h2>
-                    <button id="logoutBtn" class="icon-btn" title="Выйти">⏻</button>
+                    <div class="user-avatar" id="userAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info-header">
+                        <span id="userName">Пользователь</span>
+                        <span id="userStatus" class="status online">В сети</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="icon-btn" id="settingsBtn" title="Настройки">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="user-info">
-                    <span id="currentUser"></span>
+
+                <!-- Search -->
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Поиск пользователей...">
                 </div>
-                <div class="search-box">
-                    <input type="text" id="searchUser" class="glass-input" placeholder="Найти пользователя...">
-                    <button id="searchBtn" class="glass-btn small">🔍</button>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="chats">
+                        <i class="fas fa-comments"></i> Чаты
+                    </button>
+                    <button class="tab" data-tab="contacts">
+                        <i class="fas fa-users"></i> Контакты
+                    </button>
                 </div>
-                <div id="searchResults" class="search-results"></div>
-                <div class="chats-list" id="chatsList">
-                    <p class="empty-text">Начните новый чат</p>
+
+                <!-- Search Results -->
+                <div id="searchResults" class="search-results hidden"></div>
+
+                <!-- Chats List -->
+                <div id="chatsList" class="chats-list">
+                    <div class="empty-state">
+                        <i class="fas fa-comment-dots"></i>
+                        <p>Нет чатов</p>
+                        <span>Найдите пользователя чтобы начать</span>
+                    </div>
+                </div>
+
+                <!-- Contacts List -->
+                <div id="contactsList" class="contacts-list hidden"></div>
+
+                <!-- Logout -->
+                <div class="sidebar-footer">
+                    <button id="logoutBtn" class="glass-btn danger full-width">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </button>
                 </div>
             </div>
 
             <!-- Chat Area -->
-            <div class="glass-card chat-area">
-                <div id="noChatSelected" class="no-chat">
-                    <p>Выберите чат или найдите пользователя</p>
-                </div>
-                <div id="chatContent" class="chat-content hidden">
-                    <div class="chat-header">
-                        <span id="chatPartnerName"></span>
+            <div class="chat-area glass-card">
+                <!-- No Chat Selected -->
+                <div id="noChatSelected" class="no-chat-selected">
+                    <div class="no-chat-content">
+                        <i class="fas fa-comments"></i>
+                        <h2>ArbChat</h2>
+                        <p>Выберите чат или найдите пользователя</p>
                     </div>
-                    <div class="messages" id="messages"></div>
-                    <div class="message-input">
-                        <input type="text" id="messageInput" class="glass-input" placeholder="Сообщение...">
-                        <button id="sendBtn" class="glass-btn primary">➤</button>
+                </div>
+
+                <!-- Active Chat -->
+                <div id="activeChat" class="active-chat hidden">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <button class="icon-btn back-btn" id="backBtn">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div class="chat-user-avatar" id="chatAvatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="chat-user-info">
+                            <span id="chatUserName">Имя пользователя</span>
+                            <span id="chatUserStatus" class="status">был(а) недавно</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="icon-btn" id="callBtn" title="Позвонить">
+                                <i class="fas fa-phone"></i>
+                            </button>
+                            <button class="icon-btn" id="videoBtn" title="Видеозвонок">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="icon-btn" id="chatMenuBtn" title="Меню">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="messages-container" id="messagesContainer">
+                        <div class="messages" id="messages"></div>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <button class="icon-btn" id="attachBtn" title="Прикрепить">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <div class="input-wrapper">
+                            <input type="text" id="messageInput" class="message-input" placeholder="Написать сообщение...">
+                            <button class="icon-btn emoji-btn" id="emojiBtn" title="Эмодзи">
+                                <i class="fas fa-smile"></i>
+                            </button>
+                        </div>
+                        <button class="send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+
+                    <!-- Emoji Picker -->
+                    <div id="emojiPicker" class="emoji-picker hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Настройки</h2>
+                <button class="icon-btn close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Profile Section -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-user"></i> Профиль</h3>
+                    <div class="profile-edit">
+                        <div class="avatar-edit">
+                            <div class="avatar-preview" id="avatarPreview">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <button class="glass-btn small" id="changeAvatarBtn">
+                                <i class="fas fa-camera"></i> Изменить фото
+                            </button>
+                        </div>
+                        <div class="input-group">
+                            <label>Имя</label>
+                            <input type="text" id="displayNameInput" class="glass-input" placeholder="Ваше имя">
+                        </div>
+                        <div class="input-group">
+                            <label>Статус</label>
+                            <input type="text" id="statusInput" class="glass-input" placeholder="Ваш статус">
+                        </div>
+                        <button class="glass-btn primary" id="saveProfileBtn">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Appearance Section -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-palette"></i> Внешний вид</h3>
+                    <div class="setting-item">
+                        <span>Тема</span>
+                        <select id="themeSelect" class="glass-select">
+                            <option value="dark">Тёмная</option>
+                            <option value="light">Светлая</option>
+                            <option value="purple">Фиолетовая</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span>Размер шрифта</span>
+                        <select id="fontSizeSelect" class="glass-select">
+                            <option value="small">Маленький</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="large">Большой</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-bell"></i> Уведомления</h3>
+                    <div class="setting-item">
+                        <span>Звук сообщений</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="soundToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>Уведомления на рабочем столе</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="notifToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Privacy Section -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-shield-alt"></i> Конфиденциальность</h3>
+                    <div class="setting-item">
+                        <span>Показывать статус онлайн</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="onlineToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>Читать сообщения</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="readToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Chat Menu Modal -->
+    <div id="chatMenuModal" class="dropdown-menu hidden">
+        <button class="dropdown-item" id="clearChatBtn">
+            <i class="fas fa-trash"></i> Очистить чат
+        </button>
+        <button class="dropdown-item" id="blockUserBtn">
+            <i class="fas fa-ban"></i> Заблокировать
+        </button>
+        <button class="dropdown-item danger" id="deleteChatBtn">
+            <i class="fas fa-trash-alt"></i> Удалить чат
+        </button>
+    </div>
+
+    <!-- Notification Sound -->
+    <audio id="notificationSound" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3" type="audio/mpeg">
+    </audio>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
