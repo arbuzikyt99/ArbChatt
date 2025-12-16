@@ -23,11 +23,11 @@
             <div id="loginForm">
                 <div class="input-group">
                     <i class="fas fa-envelope"></i>
-                    <input type="email" id="email" class="glass-input" placeholder="Email">
+                    <input type="email" id="email" class="glass-input" placeholder="Email" autocomplete="email" tabindex="1">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="password" class="glass-input" placeholder="Пароль">
+                    <input type="password" id="password" class="glass-input" placeholder="Пароль" autocomplete="current-password" tabindex="2" style="position: relative; z-index: 10;">
                 </div>
                 <button id="loginBtn" class="glass-btn primary full-width" onclick="login()">
                     <i class="fas fa-sign-in-alt"></i> Войти
