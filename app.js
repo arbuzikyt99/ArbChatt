@@ -1,745 +1,858 @@
-// Firebase Configuration - ЗАМЕНИ НА СВОИ ДАННЫЕ
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyA8UMjDquPOSEvcdJnxmVwOLx-yN7PX50s",
-  authDomain: "arbchat-e3314.firebaseapp.com",
-  projectId: "arbchat-e3314",
-  storageBucket: "arbchat-e3314.firebasestorage.app",
-  messagingSenderId: "257751213924",
-  appId: "1:257751213924:web:0e70d5b8c2e9c093997c71",
-  measurementId: "G-0YC7TKWJSQ"
+    authDomain: "arbchat-e3314.firebaseapp.com",
+    databaseURL: "https://arbchat-e3314-default-rtdb.firebaseio.com",
+    projectId: "arbchat-e3314",
+    storageBucket: "arbchat-e3314.firebasestorage.app",
+    messagingSenderId: "257751213924",
+    appId: "1:257751213924:web:0e70d5b8c2e9c093997c71"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-
-// DOM Elements
-const authScreen = document.getElementById('authScreen');
-const chatScreen = document.getElementById('chatScreen');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const authError = document.getElementById('authError');
-const searchInput = document.getElementById('searchInput');
-const searchResults = document.getElementById('searchResults');
-const chatsList = document.getElementById('chatsList');
-const noChatSelected = document.getElementById('noChatSelected');
-const activeChat = document.getElementById('activeChat');
-const messagesContainer = document.getElementById('messagesContainer');
-const messages = document.getElementById('messages');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsModal = document.getElementById('settingsModal');
-const emojiBtn = document.getElementById('emojiBtn');
-const emojiPicker = document.getElementById('emojiPicker');
-const chatMenuBtn = document.getElementById('chatMenuBtn');
-const chatMenuModal = document.getElementById('chatMenuModal');
-const backBtn = document.getElementById('backBtn');
-const notificationSound = document.getElementById('notificationSound');
 
 // State
 let currentUser = null;
 let currentUserData = null;
 let currentChatId = null;
-let currentChatPartner = null;
+let currentChatData = null;
 let messagesListener = null;
-let typingTimeout = null;
+let selectedMembers = [];
 
 // Emojis
-const emojis = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖','😺','😸','😹','😻','😼','😽','🙀','😿','😾','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','👍','👎','👊','✊','🤛','🤜','🤞','✌️','🤟','🤘','👌','🤏','👈','👉','👆','👇','☝️','✋','🤚','🖐','🖖','👋','🤙','💪','🦾','🙏','🔥','⭐','🌟','✨','💫','🎉','🎊','🎁','🎈'];
+const emojis = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😛','😜','🤪','🤗','🤔','🤐','😏','😒','🙄','😬','😌','😔','😪','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','😱','😨','😰','😥','😢','😭','😤','😡','🤬','😈','💀','💩','🤡','👻','👽','🤖','😺','😸','😹','😻','❤️','🧡','💛','💚','💙','💜','🖤','💔','💕','💖','💗','💘','👍','👎','👊','✊','🤛','🤜','🤞','✌️','🤟','🤘','👌','👈','👉','👆','👇','✋','🤚','🖐','👋','🤙','💪','🙏','🔥','⭐','✨','🎉','🎊','🎁'];
 
-// Auth State Observer
-auth.onAuthStateChanged(async (user) => {
+// DOM Elements
+const $ = id => document.getElementById(id);
+
+// Auth State
+auth.onAuthStateChanged(async user => {
     if (user) {
         currentUser = user;
         await loadUserData();
-        showChatScreen();
-        updateOnlineStatus(true);
-        loadChats();
-        setupPresence();
+        
+        if (!currentUserData?.username) {
+            showScreen('usernameScreen');
+        } else {
+            showScreen('chatScreen');
+            initApp();
+        }
     } else {
         currentUser = null;
         currentUserData = null;
-        showAuthScreen();
+        showScreen('authScreen');
     }
 });
 
-// Show/Hide Screens
-function showAuthScreen() {
-    authScreen.classList.remove('hidden');
-    chatScreen.classList.add('hidden');
-}
-
-function showChatScreen() {
-    authScreen.classList.add('hidden');
-    chatScreen.classList.remove('hidden');
-    initializeUI();
-}
-
-// Initialize UI
-function initializeUI() {
-    // Set user info
-    document.getElementById('userName').textContent = currentUserData?.displayName || currentUser.email.split('@')[0];
-    
-    // Initialize emoji picker
-    initEmojiPicker();
-    
-    // Initialize tabs
-    initTabs();
-    
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    $(screenId)?.classList.remove('hidden');
 }
 
 // Load user data
 async function loadUserData() {
-    const snapshot = await db.ref('users/' + currentUser.uid).once('value');
-    currentUserData = snapshot.val() || {};
-    
-    if (!currentUserData.displayName) {
-        currentUserData.displayName = currentUser.email.split('@')[0];
-        await saveUserData();
-    }
+    const snap = await db.ref('users/' + currentUser.uid).once('value');
+    currentUserData = snap.val() || {};
 }
 
 // Save user data
-async function saveUserData() {
+async function saveUserData(data) {
     await db.ref('users/' + currentUser.uid).update({
-        email: currentUser.email,
+        ...data,
         uid: currentUser.uid,
-        displayName: currentUserData.displayName || currentUser.email.split('@')[0],
-        status: currentUserData.status || 'Привет! Я использую ArbChat',
+        email: currentUser.email,
         lastSeen: firebase.database.ServerValue.TIMESTAMP,
         online: true
     });
+    currentUserData = { ...currentUserData, ...data };
 }
 
-// Setup presence system
-function setupPresence() {
-    const userStatusRef = db.ref('users/' + currentUser.uid);
-    const connectedRef = db.ref('.info/connected');
+// Initialize App
+function initApp() {
+    updateUserUI();
+    setupPresence();
+    loadChats();
+    initEmojiPicker();
+    setupEventListeners();
+}
+
+function updateUserUI() {
+    const name = currentUserData.displayName || currentUser.email.split('@')[0];
+    const username = '@' + currentUserData.username;
     
-    connectedRef.on('value', (snapshot) => {
-        if (snapshot.val() === true) {
-            userStatusRef.onDisconnect().update({
+    $('userName').textContent = name;
+    $('userUsername').textContent = username;
+    $('menuUserName').textContent = name;
+    $('menuUserUsername').textContent = username;
+}
+
+// Presence
+function setupPresence() {
+    const userRef = db.ref('users/' + currentUser.uid);
+    const connRef = db.ref('.info/connected');
+    
+    connRef.on('value', snap => {
+        if (snap.val()) {
+            userRef.onDisconnect().update({
                 online: false,
                 lastSeen: firebase.database.ServerValue.TIMESTAMP
             });
-            
-            userStatusRef.update({
-                online: true,
-                lastSeen: firebase.database.ServerValue.TIMESTAMP
-            });
+            userRef.update({ online: true });
         }
     });
 }
 
-// Update online status
-function updateOnlineStatus(online) {
-    if (currentUser) {
-        db.ref('users/' + currentUser.uid).update({
-            online: online,
-            lastSeen: firebase.database.ServerValue.TIMESTAMP
-        });
-    }
+// Event Listeners
+function setupEventListeners() {
+    // Auth
+    $('loginBtn').onclick = login;
+    $('registerBtn').onclick = register;
+    $('password').onkeypress = e => e.key === 'Enter' && login();
+    
+    // Username setup
+    $('saveUsernameBtn').onclick = saveUsername;
+    
+    // Menu
+    $('menuBtn').onclick = () => $('mainMenuModal').classList.toggle('hidden');
+    $('logoutBtn').onclick = logout;
+    $('settingsMenuBtn').onclick = () => { closeAllModals(); openModal('settingsModal'); loadSettings(); };
+    $('newGroupBtn').onclick = () => { closeAllModals(); openModal('createGroupModal'); };
+    $('newChannelBtn').onclick = () => { closeAllModals(); openModal('createChannelModal'); };
+    
+    // New chat
+    $('newChatBtn').onclick = () => openModal('newChatModal');
+    
+    // Search
+    $('searchInput').oninput = debounce(e => searchChats(e.target.value), 300);
+    $('newChatSearch').oninput = debounce(e => searchUsers(e.target.value, 'newChatResults'), 300);
+    $('groupMembersSearch').oninput = debounce(e => searchUsers(e.target.value, 'groupMembersResults', true), 300);
+    
+    // Create group/channel
+    $('createGroupBtn').onclick = createGroup;
+    $('createChannelBtn').onclick = createChannel;
+    
+    // Messages
+    $('sendBtn').onclick = sendMessage;
+    $('messageInput').onkeypress = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+    $('messageInput').oninput = autoResizeTextarea;
+    
+    // Emoji
+    $('emojiBtn').onclick = e => { e.stopPropagation(); $('emojiPicker').classList.toggle('hidden'); };
+    
+    // Chat menu
+    $('chatMenuBtn').onclick = e => { e.stopPropagation(); toggleChatMenu(e); };
+    $('clearChatBtn').onclick = clearChat;
+    $('deleteChatBtn').onclick = deleteChat;
+    $('viewProfileBtn').onclick = viewProfile;
+    
+    // Chat header click
+    $('chatHeaderInfo').onclick = viewProfile;
+    
+    // Back button
+    $('backBtn').onclick = closeChat;
+    
+    // Settings
+    $('saveProfileBtn').onclick = saveProfile;
+    
+    // Close modals
+    document.querySelectorAll('.close-modal, .modal-overlay').forEach(el => {
+        el.onclick = closeAllModals;
+    });
+    
+    // Close dropdowns on click outside
+    document.onclick = () => {
+        $('chatMenuModal').classList.add('hidden');
+        $('emojiPicker').classList.add('hidden');
+        $('mainMenuModal').classList.add('hidden');
+    };
 }
 
-// Login
-loginBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+// Auth functions
+async function login() {
+    const email = $('email').value.trim();
+    const password = $('password').value;
     
-    if (!email || !password) {
-        showError('Заполните все поля');
-        return;
-    }
+    if (!email || !password) return showAuthError('Заполните все поля');
     
     try {
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Вход...';
+        $('loginBtn').disabled = true;
+        $('loginBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         await auth.signInWithEmailAndPassword(email, password);
-    } catch (error) {
-        showError(getErrorMessage(error.code));
+    } catch (e) {
+        showAuthError(getAuthError(e.code));
     } finally {
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
+        $('loginBtn').disabled = false;
+        $('loginBtn').innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
     }
-});
-
-// Register
-registerBtn.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    
-    if (!email || !password) {
-        showError('Заполните все поля');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showError('Пароль минимум 6 символов');
-        return;
-    }
-    
-    try {
-        registerBtn.disabled = true;
-        registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
-        await auth.createUserWithEmailAndPassword(email, password);
-    } catch (error) {
-        showError(getErrorMessage(error.code));
-    } finally {
-        registerBtn.disabled = false;
-        registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Регистрация';
-    }
-});
-
-// Logout
-logoutBtn.addEventListener('click', async () => {
-    updateOnlineStatus(false);
-    await auth.signOut();
-});
-
-// Show error
-function showError(message) {
-    authError.textContent = message;
-    setTimeout(() => authError.textContent = '', 5000);
 }
 
-// Error messages
-function getErrorMessage(code) {
-    const messages = {
+async function register() {
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    
+    if (!email || !password) return showAuthError('Заполните все поля');
+    if (password.length < 6) return showAuthError('Пароль минимум 6 символов');
+    
+    try {
+        $('registerBtn').disabled = true;
+        $('registerBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        await auth.createUserWithEmailAndPassword(email, password);
+    } catch (e) {
+        showAuthError(getAuthError(e.code));
+    } finally {
+        $('registerBtn').disabled = false;
+        $('registerBtn').innerHTML = '<i class="fas fa-user-plus"></i> Регистрация';
+    }
+}
+
+async function logout() {
+    await db.ref('users/' + currentUser.uid).update({ online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+    await auth.signOut();
+}
+
+function showAuthError(msg) {
+    $('authError').textContent = msg;
+    setTimeout(() => $('authError').textContent = '', 4000);
+}
+
+function getAuthError(code) {
+    const errors = {
         'auth/email-already-in-use': 'Email уже используется',
         'auth/invalid-email': 'Неверный email',
         'auth/user-not-found': 'Пользователь не найден',
         'auth/wrong-password': 'Неверный пароль',
-        'auth/weak-password': 'Слабый пароль',
         'auth/invalid-credential': 'Неверные данные'
     };
-    return messages[code] || 'Ошибка авторизации';
+    return errors[code] || 'Ошибка авторизации';
 }
 
-// Enter key handlers
-passwordInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') loginBtn.click();
-});
-
-
-// Search users
-let searchTimeout;
-searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    const query = searchInput.value.trim().toLowerCase();
+// Username
+async function saveUsername() {
+    const username = $('usernameInput').value.trim().toLowerCase();
     
-    if (!query) {
-        searchResults.classList.add('hidden');
-        searchResults.innerHTML = '';
+    if (!/^[a-z0-9_]{5,20}$/.test(username)) {
+        $('usernameHint').textContent = 'Только буквы, цифры и _ (5-20 символов)';
+        $('usernameHint').style.color = 'var(--danger)';
         return;
     }
     
-    searchTimeout = setTimeout(() => searchUsers(query), 300);
-});
-
-async function searchUsers(query) {
-    searchResults.classList.remove('hidden');
-    searchResults.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Поиск...</p></div>';
+    // Check if username exists
+    const snap = await db.ref('usernames/' + username).once('value');
+    if (snap.exists()) {
+        $('usernameHint').textContent = 'Этот username уже занят';
+        $('usernameHint').style.color = 'var(--danger)';
+        return;
+    }
     
-    const snapshot = await db.ref('users').once('value');
-    const users = snapshot.val() || {};
-    
-    let results = [];
-    Object.values(users).forEach(user => {
-        if (user.uid !== currentUser.uid) {
-            const name = (user.displayName || '').toLowerCase();
-            const email = (user.email || '').toLowerCase();
-            if (name.includes(query) || email.includes(query)) {
-                results.push(user);
-            }
-        }
+    // Save username
+    await db.ref('usernames/' + username).set(currentUser.uid);
+    await saveUserData({
+        username: username,
+        displayName: currentUser.email.split('@')[0]
     });
     
-    if (results.length === 0) {
-        searchResults.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i><p>Не найдено</p></div>';
+    showScreen('chatScreen');
+    initApp();
+}
+
+
+// Search
+async function searchChats(query) {
+    if (!query) {
+        loadChats();
         return;
     }
     
-    searchResults.innerHTML = '';
+    query = query.toLowerCase();
+    const isUsername = query.startsWith('@');
+    if (isUsername) query = query.slice(1);
+    
+    // Search users
+    const usersSnap = await db.ref('users').once('value');
+    const users = usersSnap.val() || {};
+    
+    const results = Object.values(users).filter(u => {
+        if (u.uid === currentUser.uid) return false;
+        const name = (u.displayName || '').toLowerCase();
+        const uname = (u.username || '').toLowerCase();
+        return isUsername ? uname.includes(query) : (name.includes(query) || uname.includes(query));
+    });
+    
+    renderSearchResults(results);
+}
+
+function renderSearchResults(results) {
+    const list = $('chatsList');
+    
+    if (!results.length) {
+        list.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Не найдено</p></div>';
+        return;
+    }
+    
+    list.innerHTML = '';
     results.forEach(user => {
+        const div = document.createElement('div');
+        div.className = 'chat-item';
+        div.innerHTML = `
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <div class="chat-info">
+                <div class="chat-name"><span>${esc(user.displayName || user.username)}</span></div>
+                <div class="chat-preview">@${esc(user.username)}</div>
+            </div>
+        `;
+        div.onclick = () => startPrivateChat(user);
+        list.appendChild(div);
+    });
+}
+
+async function searchUsers(query, containerId, forGroup = false) {
+    const container = $(containerId);
+    if (!query) { container.innerHTML = ''; return; }
+    
+    query = query.toLowerCase().replace('@', '');
+    
+    const snap = await db.ref('users').once('value');
+    const users = snap.val() || {};
+    
+    const results = Object.values(users).filter(u => {
+        if (u.uid === currentUser.uid) return false;
+        if (forGroup && selectedMembers.find(m => m.uid === u.uid)) return false;
+        const name = (u.displayName || '').toLowerCase();
+        const uname = (u.username || '').toLowerCase();
+        return name.includes(query) || uname.includes(query);
+    });
+    
+    container.innerHTML = '';
+    results.slice(0, 10).forEach(user => {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         div.innerHTML = `
             <div class="avatar"><i class="fas fa-user"></i></div>
             <div class="info">
-                <div class="name">${escapeHtml(user.displayName || user.email.split('@')[0])}</div>
-                <div class="email">${escapeHtml(user.email)}</div>
+                <div class="name">${esc(user.displayName || user.username)}</div>
+                <div class="username">@${esc(user.username)}</div>
             </div>
         `;
-        div.addEventListener('click', () => startChat(user));
-        searchResults.appendChild(div);
+        div.onclick = () => {
+            if (forGroup) {
+                addMember(user);
+                container.innerHTML = '';
+                $('groupMembersSearch').value = '';
+            } else {
+                closeAllModals();
+                startPrivateChat(user);
+            }
+        };
+        container.appendChild(div);
     });
 }
 
-// Start chat
-function startChat(partner) {
-    searchResults.classList.add('hidden');
-    searchResults.innerHTML = '';
-    searchInput.value = '';
-    
+// Members for group
+function addMember(user) {
+    if (selectedMembers.find(m => m.uid === user.uid)) return;
+    selectedMembers.push(user);
+    renderSelectedMembers();
+}
+
+function removeMember(uid) {
+    selectedMembers = selectedMembers.filter(m => m.uid !== uid);
+    renderSelectedMembers();
+}
+
+function renderSelectedMembers() {
+    const container = $('selectedMembers');
+    container.innerHTML = '';
+    selectedMembers.forEach(m => {
+        const span = document.createElement('span');
+        span.className = 'selected-member';
+        span.innerHTML = `${esc(m.displayName || m.username)} <span class="remove" onclick="removeMember('${m.uid}')">&times;</span>`;
+        container.appendChild(span);
+    });
+}
+
+// Load chats
+function loadChats() {
+    db.ref('userChats/' + currentUser.uid).orderByChild('timestamp').on('value', snap => {
+        const chats = snap.val();
+        const list = $('chatsList');
+        
+        if (!chats) {
+            list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-dots"></i><p>Нет чатов</p><span>Найдите пользователя чтобы начать</span></div>';
+            return;
+        }
+        
+        list.innerHTML = '';
+        const sorted = Object.entries(chats).sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+        
+        sorted.forEach(([chatId, chat]) => {
+            const div = document.createElement('div');
+            div.className = 'chat-item' + (currentChatId === chatId ? ' active' : '');
+            div.dataset.chatId = chatId;
+            
+            const avatarClass = chat.type === 'group' ? 'group' : chat.type === 'channel' ? 'channel' : '';
+            const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : 'user';
+            const unread = chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : '';
+            
+            div.innerHTML = `
+                <div class="avatar ${avatarClass}"><i class="fas fa-${icon}"></i></div>
+                <div class="chat-info">
+                    <div class="chat-name">
+                        <span>${esc(chat.name || 'Чат')}</span>
+                        <span class="chat-time">${formatTime(chat.timestamp)}</span>
+                    </div>
+                    <div class="chat-preview">${esc(chat.lastMessage || 'Нет сообщений')}${unread}</div>
+                </div>
+            `;
+            div.onclick = () => openChat(chatId, chat);
+            list.appendChild(div);
+        });
+    });
+}
+
+// Start private chat
+async function startPrivateChat(partner) {
     const chatId = [currentUser.uid, partner.uid].sort().join('_');
     
-    // Save chat for both users
     const chatData = {
+        type: 'private',
         oderId: partner.uid,
-        partnerEmail: partner.email,
-        partnerName: partner.displayName || partner.email.split('@')[0],
+        name: partner.displayName || partner.username,
+        username: partner.username,
         lastMessage: '',
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         unread: 0
     };
     
-    db.ref(`userChats/${currentUser.uid}/${chatId}`).update(chatData);
-    
-    db.ref(`userChats/${partner.uid}/${chatId}`).update({
+    await db.ref(`userChats/${currentUser.uid}/${chatId}`).update(chatData);
+    await db.ref(`userChats/${partner.uid}/${chatId}`).update({
+        type: 'private',
         oderId: currentUser.uid,
-        partnerEmail: currentUser.email,
-        partnerName: currentUserData.displayName || currentUser.email.split('@')[0],
+        name: currentUserData.displayName || currentUserData.username,
+        username: currentUserData.username,
         lastMessage: '',
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
     
-    openChat(chatId, partner);
+    openChat(chatId, { ...chatData, oderId: partner.uid });
 }
 
-// Open chat
-function openChat(chatId, partner) {
-    currentChatId = chatId;
-    currentChatPartner = partner;
+// Create group
+async function createGroup() {
+    const name = $('groupNameInput').value.trim();
+    const desc = $('groupDescInput').value.trim();
     
-    // Update UI
-    noChatSelected.classList.add('hidden');
-    activeChat.classList.remove('hidden');
+    if (!name) return showToast('Введите название группы');
+    if (selectedMembers.length === 0) return showToast('Добавьте участников');
     
-    // Set chat header
-    document.getElementById('chatUserName').textContent = partner.partnerName || partner.displayName || partner.email?.split('@')[0] || 'Пользователь';
+    const groupId = db.ref('chats').push().key;
+    const members = { [currentUser.uid]: { role: 'admin', joinedAt: Date.now() } };
+    selectedMembers.forEach(m => members[m.uid] = { role: 'member', joinedAt: Date.now() });
     
-    // Listen for partner status
-    const partnerId = partner.oderId || partner.uid;
-    db.ref('users/' + partnerId).on('value', (snapshot) => {
-        const userData = snapshot.val();
-        if (userData) {
-            const statusEl = document.getElementById('chatUserStatus');
-            if (userData.online) {
-                statusEl.textContent = 'в сети';
-                statusEl.classList.add('online');
-            } else {
-                statusEl.textContent = formatLastSeen(userData.lastSeen);
-                statusEl.classList.remove('online');
-            }
-        }
+    await db.ref('chats/' + groupId).set({
+        type: 'group',
+        name: name,
+        description: desc,
+        createdBy: currentUser.uid,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        members: members
     });
     
-    // Remove previous listener
-    if (messagesListener) {
-        db.ref(`messages/${currentChatId}`).off('value', messagesListener);
+    // Add to all members' chats
+    const chatRef = {
+        type: 'group',
+        name: name,
+        lastMessage: '',
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        unread: 0
+    };
+    
+    await db.ref(`userChats/${currentUser.uid}/${groupId}`).set(chatRef);
+    for (const m of selectedMembers) {
+        await db.ref(`userChats/${m.uid}/${groupId}`).set(chatRef);
+    }
+    
+    selectedMembers = [];
+    $('groupNameInput').value = '';
+    $('groupDescInput').value = '';
+    $('selectedMembers').innerHTML = '';
+    closeAllModals();
+    showToast('Группа создана!');
+}
+
+// Create channel
+async function createChannel() {
+    const name = $('channelNameInput').value.trim();
+    const desc = $('channelDescInput').value.trim();
+    const isPublic = document.querySelector('input[name="channelType"]:checked').value === 'public';
+    const link = $('channelLinkInput').value.trim().toLowerCase();
+    
+    if (!name) return showToast('Введите название канала');
+    
+    if (isPublic && link) {
+        const exists = await db.ref('channelLinks/' + link).once('value');
+        if (exists.exists()) return showToast('Эта ссылка уже занята');
+    }
+    
+    const channelId = db.ref('chats').push().key;
+    
+    await db.ref('chats/' + channelId).set({
+        type: 'channel',
+        name: name,
+        description: desc,
+        isPublic: isPublic,
+        link: isPublic ? link : null,
+        createdBy: currentUser.uid,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        members: { [currentUser.uid]: { role: 'admin', joinedAt: Date.now() } },
+        subscribersCount: 1
+    });
+    
+    if (isPublic && link) {
+        await db.ref('channelLinks/' + link).set(channelId);
+    }
+    
+    await db.ref(`userChats/${currentUser.uid}/${channelId}`).set({
+        type: 'channel',
+        name: name,
+        lastMessage: '',
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        unread: 0
+    });
+    
+    $('channelNameInput').value = '';
+    $('channelDescInput').value = '';
+    $('channelLinkInput').value = '';
+    closeAllModals();
+    showToast('Канал создан!');
+}
+
+
+// Open chat
+function openChat(chatId, chat) {
+    currentChatId = chatId;
+    currentChatData = chat;
+    
+    $('noChatSelected').classList.add('hidden');
+    $('activeChat').classList.remove('hidden');
+    
+    // Set header
+    $('chatUserName').textContent = chat.name || 'Чат';
+    
+    const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : 'user';
+    $('chatAvatar').innerHTML = `<i class="fas fa-${icon}"></i>`;
+    if (chat.type === 'group') $('chatAvatar').style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+    else if (chat.type === 'channel') $('chatAvatar').style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+    else $('chatAvatar').style.background = '';
+    
+    // Status
+    if (chat.type === 'private' && chat.oderId) {
+        db.ref('users/' + chat.oderId).on('value', snap => {
+            const u = snap.val();
+            if (u) {
+                $('chatUserStatus').textContent = u.online ? 'в сети' : formatLastSeen(u.lastSeen);
+                $('chatUserStatus').className = 'status' + (u.online ? ' online' : '');
+            }
+        });
+    } else if (chat.type === 'group') {
+        db.ref('chats/' + chatId + '/members').once('value', snap => {
+            const count = Object.keys(snap.val() || {}).length;
+            $('chatUserStatus').textContent = `${count} участник${getPlural(count, '', 'а', 'ов')}`;
+            $('chatUserStatus').className = 'status';
+        });
+    } else if (chat.type === 'channel') {
+        db.ref('chats/' + chatId + '/subscribersCount').once('value', snap => {
+            const count = snap.val() || 0;
+            $('chatUserStatus').textContent = `${count} подписчик${getPlural(count, '', 'а', 'ов')}`;
+            $('chatUserStatus').className = 'status';
+        });
     }
     
     // Mark as read
     db.ref(`userChats/${currentUser.uid}/${chatId}/unread`).set(0);
     
-    // Listen for messages
-    messagesListener = db.ref(`messages/${chatId}`).orderByChild('timestamp').on('value', (snapshot) => {
-        renderMessages(snapshot.val());
+    // Load messages
+    if (messagesListener) db.ref('messages/' + currentChatId).off('value', messagesListener);
+    messagesListener = db.ref('messages/' + chatId).orderByChild('timestamp').limitToLast(100).on('value', snap => {
+        renderMessages(snap.val());
     });
     
     // Update active state
-    document.querySelectorAll('.chat-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.chatId === chatId);
+    document.querySelectorAll('.chat-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.chatId === chatId);
     });
     
-    // Mobile: show chat area
+    // Mobile
     document.querySelector('.sidebar').classList.add('chat-open');
     document.querySelector('.chat-area').classList.add('active');
     
-    // Focus input
-    messageInput.focus();
+    $('messageInput').focus();
+}
+
+function closeChat() {
+    document.querySelector('.sidebar').classList.remove('chat-open');
+    document.querySelector('.chat-area').classList.remove('active');
+    currentChatId = null;
+    currentChatData = null;
 }
 
 // Render messages
-function renderMessages(messagesData) {
-    messages.innerHTML = '';
+function renderMessages(data) {
+    const container = $('messages');
+    container.innerHTML = '';
     
-    if (!messagesData) {
-        messages.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Нет сообщений</p><span>Напишите первое сообщение!</span></div>';
+    if (!data) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Нет сообщений</p><span>Напишите первое!</span></div>';
         return;
     }
     
     let lastDate = null;
     
-    Object.entries(messagesData).forEach(([key, msg]) => {
-        // Date divider
+    Object.values(data).forEach(msg => {
         const msgDate = new Date(msg.timestamp).toDateString();
         if (msgDate !== lastDate) {
             const divider = document.createElement('div');
             divider.className = 'date-divider';
             divider.innerHTML = `<span>${formatDate(msg.timestamp)}</span>`;
-            messages.appendChild(divider);
+            container.appendChild(divider);
             lastDate = msgDate;
         }
         
+        const isMine = msg.senderId === currentUser.uid;
         const div = document.createElement('div');
-        div.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+        div.className = 'message ' + (isMine ? 'sent' : 'received');
+        
+        let senderHtml = '';
+        if (!isMine && (currentChatData?.type === 'group' || currentChatData?.type === 'channel')) {
+            senderHtml = `<div class="message-sender">${esc(msg.senderName || 'Пользователь')}</div>`;
+        }
         
         div.innerHTML = `
-            <div class="message-text">${escapeHtml(msg.text)}</div>
+            ${senderHtml}
+            <div class="message-text">${esc(msg.text)}</div>
             <div class="message-footer">
                 <span class="message-time">${formatTime(msg.timestamp)}</span>
-                ${msg.senderId === currentUser.uid ? `<span class="message-status ${msg.read ? 'read' : ''}"><i class="fas fa-check${msg.read ? '-double' : ''}"></i></span>` : ''}
+                ${isMine ? `<span class="message-status ${msg.read ? 'read' : ''}"><i class="fas fa-check${msg.read ? '-double' : ''}"></i></span>` : ''}
             </div>
         `;
-        
-        messages.appendChild(div);
+        container.appendChild(div);
     });
     
-    // Scroll to bottom
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    $('messagesContainer').scrollTop = $('messagesContainer').scrollHeight;
 }
 
 // Send message
-sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
 function sendMessage() {
-    const text = messageInput.value.trim();
+    const text = $('messageInput').value.trim();
     if (!text || !currentChatId) return;
     
-    const messageRef = db.ref(`messages/${currentChatId}`).push();
-    messageRef.set({
+    const msgRef = db.ref('messages/' + currentChatId).push();
+    msgRef.set({
         text: text,
         senderId: currentUser.uid,
-        senderName: currentUserData.displayName || currentUser.email.split('@')[0],
+        senderName: currentUserData.displayName || currentUserData.username,
         timestamp: firebase.database.ServerValue.TIMESTAMP,
         read: false
     });
     
     // Update chat preview
-    const partnerId = currentChatPartner.oderId || currentChatPartner.uid;
-    
     db.ref(`userChats/${currentUser.uid}/${currentChatId}`).update({
         lastMessage: text,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     });
     
-    db.ref(`userChats/${partnerId}/${currentChatId}`).update({
-        lastMessage: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        unread: firebase.database.ServerValue.increment(1)
-    });
-    
-    messageInput.value = '';
-    messageInput.focus();
-}
-
-// Load chats
-function loadChats() {
-    db.ref(`userChats/${currentUser.uid}`).orderByChild('timestamp').on('value', (snapshot) => {
-        const chats = snapshot.val();
-        
-        if (!chats) {
-            chatsList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-comment-dots"></i>
-                    <p>Нет чатов</p>
-                    <span>Найдите пользователя чтобы начать</span>
-                </div>
-            `;
-            return;
-        }
-        
-        chatsList.innerHTML = '';
-        const chatsArray = Object.entries(chats).sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
-        
-        chatsArray.forEach(([chatId, chat]) => {
-            const div = document.createElement('div');
-            div.className = 'chat-item';
-            div.dataset.chatId = chatId;
-            
-            if (currentChatId === chatId) {
-                div.classList.add('active');
-            }
-            
-            const unreadBadge = chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : '';
-            
-            div.innerHTML = `
-                <div class="avatar">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="chat-info">
-                    <div class="chat-name">
-                        <span>${escapeHtml(chat.partnerName || chat.partnerEmail?.split('@')[0] || 'Пользователь')}</span>
-                        <span class="chat-time">${chat.timestamp ? formatTime(chat.timestamp) : ''}</span>
-                    </div>
-                    <div class="chat-preview">
-                        ${escapeHtml(chat.lastMessage || 'Нет сообщений')}
-                        ${unreadBadge}
-                    </div>
-                </div>
-            `;
-            
-            div.addEventListener('click', () => openChat(chatId, chat));
-            chatsList.appendChild(div);
+    // Update for partner/members
+    if (currentChatData?.type === 'private' && currentChatData.oderId) {
+        db.ref(`userChats/${currentChatData.oderId}/${currentChatId}`).update({
+            lastMessage: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            unread: firebase.database.ServerValue.increment(1)
         });
-    });
-}
-
-
-// Tabs
-function initTabs() {
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            
-            const tabName = tab.dataset.tab;
-            if (tabName === 'chats') {
-                chatsList.classList.remove('hidden');
-                document.getElementById('contactsList').classList.add('hidden');
-            } else {
-                chatsList.classList.add('hidden');
-                document.getElementById('contactsList').classList.remove('hidden');
-                loadContacts();
-            }
+    } else if (currentChatData?.type === 'group' || currentChatData?.type === 'channel') {
+        db.ref('chats/' + currentChatId + '/members').once('value', snap => {
+            const members = snap.val() || {};
+            Object.keys(members).forEach(uid => {
+                if (uid !== currentUser.uid) {
+                    db.ref(`userChats/${uid}/${currentChatId}`).update({
+                        lastMessage: text,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        unread: firebase.database.ServerValue.increment(1)
+                    });
+                }
+            });
         });
-    });
-}
-
-// Load contacts
-async function loadContacts() {
-    const contactsList = document.getElementById('contactsList');
-    contactsList.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
-    
-    const snapshot = await db.ref('users').once('value');
-    const users = snapshot.val() || {};
-    
-    contactsList.innerHTML = '';
-    
-    Object.values(users).forEach(user => {
-        if (user.uid !== currentUser.uid) {
-            const div = document.createElement('div');
-            div.className = 'chat-item';
-            div.innerHTML = `
-                <div class="avatar">
-                    <i class="fas fa-user"></i>
-                    ${user.online ? '<span class="online-dot"></span>' : ''}
-                </div>
-                <div class="chat-info">
-                    <div class="chat-name">
-                        <span>${escapeHtml(user.displayName || user.email.split('@')[0])}</span>
-                    </div>
-                    <div class="chat-preview">${user.online ? 'в сети' : formatLastSeen(user.lastSeen)}</div>
-                </div>
-            `;
-            div.addEventListener('click', () => startChat(user));
-            contactsList.appendChild(div);
-        }
-    });
-    
-    if (contactsList.children.length === 0) {
-        contactsList.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Нет контактов</p></div>';
     }
+    
+    $('messageInput').value = '';
+    $('messageInput').style.height = 'auto';
 }
 
-// Emoji picker
-function initEmojiPicker() {
-    emojiPicker.innerHTML = '';
-    emojis.forEach(emoji => {
-        const btn = document.createElement('button');
-        btn.textContent = emoji;
-        btn.addEventListener('click', () => {
-            messageInput.value += emoji;
-            messageInput.focus();
-        });
-        emojiPicker.appendChild(btn);
-    });
+// Chat actions
+function toggleChatMenu(e) {
+    const menu = $('chatMenuModal');
+    const rect = e.target.closest('.icon-btn').getBoundingClientRect();
+    menu.style.top = rect.bottom + 8 + 'px';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    menu.classList.toggle('hidden');
 }
 
-emojiBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    emojiPicker.classList.toggle('hidden');
-});
+async function clearChat() {
+    if (!currentChatId || !confirm('Очистить историю?')) return;
+    await db.ref('messages/' + currentChatId).remove();
+    $('chatMenuModal').classList.add('hidden');
+    showToast('Чат очищен');
+}
 
-document.addEventListener('click', (e) => {
-    if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
-        emojiPicker.classList.add('hidden');
-    }
-});
+async function deleteChat() {
+    if (!currentChatId || !confirm('Удалить чат?')) return;
+    await db.ref(`userChats/${currentUser.uid}/${currentChatId}`).remove();
+    $('chatMenuModal').classList.add('hidden');
+    closeChat();
+    $('noChatSelected').classList.remove('hidden');
+    $('activeChat').classList.add('hidden');
+    showToast('Чат удалён');
+}
 
-// Settings modal
-settingsBtn.addEventListener('click', () => {
-    settingsModal.classList.remove('hidden');
-    loadSettings();
-});
+async function viewProfile() {
+    if (!currentChatData || currentChatData.type !== 'private') return;
+    
+    const snap = await db.ref('users/' + currentChatData.oderId).once('value');
+    const user = snap.val();
+    if (!user) return;
+    
+    $('profileName').textContent = user.displayName || user.username;
+    $('profileUsername').textContent = '@' + user.username;
+    $('profileBio').textContent = user.bio || '';
+    $('profileStatus').textContent = user.online ? 'в сети' : formatLastSeen(user.lastSeen);
+    $('profileStatus').className = 'status' + (user.online ? ' online' : '');
+    
+    $('sendMessageBtn').onclick = () => closeAllModals();
+    
+    openModal('userProfileModal');
+}
 
-document.querySelectorAll('.close-modal, .modal-overlay').forEach(el => {
-    el.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
-        chatMenuModal.classList.add('hidden');
-    });
-});
-
+// Settings
 function loadSettings() {
-    document.getElementById('displayNameInput').value = currentUserData.displayName || '';
-    document.getElementById('statusInput').value = currentUserData.status || '';
+    $('displayNameInput').value = currentUserData.displayName || '';
+    $('editUsernameInput').value = currentUserData.username || '';
+    $('bioInput').value = currentUserData.bio || '';
 }
 
-// Save profile
-document.getElementById('saveProfileBtn').addEventListener('click', async () => {
-    const displayName = document.getElementById('displayNameInput').value.trim();
-    const status = document.getElementById('statusInput').value.trim();
+async function saveProfile() {
+    const name = $('displayNameInput').value.trim();
+    const newUsername = $('editUsernameInput').value.trim().toLowerCase();
+    const bio = $('bioInput').value.trim();
     
-    currentUserData.displayName = displayName || currentUser.email.split('@')[0];
-    currentUserData.status = status;
-    
-    await saveUserData();
-    
-    document.getElementById('userName').textContent = currentUserData.displayName;
-    settingsModal.classList.add('hidden');
-    
-    // Show success
-    alert('Профиль сохранён!');
-});
-
-// Chat menu
-chatMenuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const rect = chatMenuBtn.getBoundingClientRect();
-    chatMenuModal.style.top = rect.bottom + 10 + 'px';
-    chatMenuModal.style.right = (window.innerWidth - rect.right) + 'px';
-    chatMenuModal.classList.toggle('hidden');
-});
-
-document.addEventListener('click', () => {
-    chatMenuModal.classList.add('hidden');
-});
-
-// Clear chat
-document.getElementById('clearChatBtn').addEventListener('click', async () => {
-    if (!currentChatId) return;
-    if (confirm('Очистить историю сообщений?')) {
-        await db.ref(`messages/${currentChatId}`).remove();
-        chatMenuModal.classList.add('hidden');
-    }
-});
-
-// Delete chat
-document.getElementById('deleteChatBtn').addEventListener('click', async () => {
-    if (!currentChatId) return;
-    if (confirm('Удалить чат?')) {
-        await db.ref(`userChats/${currentUser.uid}/${currentChatId}`).remove();
-        await db.ref(`messages/${currentChatId}`).remove();
-        
-        currentChatId = null;
-        currentChatPartner = null;
-        
-        noChatSelected.classList.remove('hidden');
-        activeChat.classList.add('hidden');
-        chatMenuModal.classList.add('hidden');
-    }
-});
-
-// Back button (mobile)
-backBtn.addEventListener('click', () => {
-    document.querySelector('.sidebar').classList.remove('chat-open');
-    document.querySelector('.chat-area').classList.remove('active');
-    currentChatId = null;
-});
-
-// Sound toggle
-document.getElementById('soundToggle').addEventListener('change', (e) => {
-    localStorage.setItem('soundEnabled', e.target.checked);
-});
-
-// Notification toggle
-document.getElementById('notifToggle').addEventListener('change', async (e) => {
-    if (e.target.checked && 'Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            e.target.checked = false;
+    if (newUsername && newUsername !== currentUserData.username) {
+        if (!/^[a-z0-9_]{5,20}$/.test(newUsername)) {
+            return showToast('Username: 5-20 символов, буквы, цифры, _');
         }
+        const exists = await db.ref('usernames/' + newUsername).once('value');
+        if (exists.exists()) return showToast('Username занят');
+        
+        await db.ref('usernames/' + currentUserData.username).remove();
+        await db.ref('usernames/' + newUsername).set(currentUser.uid);
     }
-    localStorage.setItem('notifEnabled', e.target.checked);
-});
-
-// Helper functions
-function formatTime(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDate(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
     
-    if (date.toDateString() === today.toDateString()) {
-        return 'Сегодня';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Вчера';
-    } else {
-        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    }
+    await saveUserData({
+        displayName: name || currentUserData.username,
+        username: newUsername || currentUserData.username,
+        bio: bio
+    });
+    
+    updateUserUI();
+    closeAllModals();
+    showToast('Сохранено!');
 }
 
-function formatLastSeen(timestamp) {
-    if (!timestamp) return 'был(а) давно';
-    const date = new Date(timestamp);
+// Emoji
+function initEmojiPicker() {
+    const picker = $('emojiPicker');
+    picker.innerHTML = '';
+    emojis.forEach(e => {
+        const btn = document.createElement('button');
+        btn.textContent = e;
+        btn.onclick = () => {
+            $('messageInput').value += e;
+            $('messageInput').focus();
+        };
+        picker.appendChild(btn);
+    });
+}
+
+// Helpers
+function openModal(id) { $(id).classList.remove('hidden'); }
+function closeAllModals() {
+    document.querySelectorAll('.modal, .sidebar-menu').forEach(m => m.classList.add('hidden'));
+    selectedMembers = [];
+    $('selectedMembers').innerHTML = '';
+}
+
+function showToast(msg) {
+    const toast = $('toast');
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+function formatTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
     const now = new Date();
-    const diff = now - date;
+    if (d.toDateString() === now.toDateString()) {
+        return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+}
+
+function formatDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const now = new Date();
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
     
+    if (d.toDateString() === now.toDateString()) return 'Сегодня';
+    if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+    return d.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
+}
+
+function formatLastSeen(ts) {
+    if (!ts) return 'был(а) давно';
+    const diff = Date.now() - ts;
     if (diff < 60000) return 'был(а) только что';
     if (diff < 3600000) return `был(а) ${Math.floor(diff / 60000)} мин. назад`;
     if (diff < 86400000) return `был(а) ${Math.floor(diff / 3600000)} ч. назад`;
-    return `был(а) ${date.toLocaleDateString('ru-RU')}`;
+    return 'был(а) ' + new Date(ts).toLocaleDateString('ru');
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
+function getPlural(n, one, few, many) {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+}
+
+function esc(str) {
+    if (!str) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = str;
     return div.innerHTML;
 }
 
-// Window events
-window.addEventListener('beforeunload', () => {
-    updateOnlineStatus(false);
-});
+function debounce(fn, ms) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), ms);
+    };
+}
 
-window.addEventListener('focus', () => {
-    if (currentUser) updateOnlineStatus(true);
-});
+function autoResizeTextarea() {
+    const el = $('messageInput');
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
 
-window.addEventListener('blur', () => {
-    // Keep online for a bit after blur
-});
-
-// Load saved settings
-document.addEventListener('DOMContentLoaded', () => {
-    const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
-    const notifEnabled = localStorage.getItem('notifEnabled') === 'true';
-    
-    document.getElementById('soundToggle').checked = soundEnabled;
-    document.getElementById('notifToggle').checked = notifEnabled;
-});
-
+// Make removeMember global
+window.removeMember = removeMember;
