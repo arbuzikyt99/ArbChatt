@@ -117,9 +117,17 @@ function setupEventListeners() {
     // Menu
     $('menuBtn').onclick = () => $('mainMenuModal').classList.toggle('hidden');
     $('logoutBtn').onclick = logout;
+    $('logoutSidebarBtn').onclick = logout;
     $('settingsMenuBtn').onclick = () => { closeAllModals(); openModal('settingsModal'); loadSettings(); };
-    $('newGroupBtn').onclick = () => { closeAllModals(); openModal('createGroupModal'); };
+    $('newGroupBtn').onclick = () => { closeAllModals(); openModal('createGroupModal'); loadUsersForGroup(); };
     $('newChannelBtn').onclick = () => { closeAllModals(); openModal('createChannelModal'); };
+    $('contactsBtn').onclick = () => { closeAllModals(); switchTab('contacts'); };
+    $('savedBtn').onclick = () => { closeAllModals(); openSavedMessages(); };
+    
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => switchTab(btn.dataset.tab);
+    });
     
     // New chat
     $('newChatBtn').onclick = () => openModal('newChatModal');
@@ -220,12 +228,15 @@ function showAuthError(msg) {
 function getAuthError(code) {
     const errors = {
         'auth/email-already-in-use': 'Email уже используется',
-        'auth/invalid-email': 'Неверный email',
-        'auth/user-not-found': 'Пользователь не найден',
+        'auth/invalid-email': 'Неверный формат email',
+        'auth/user-not-found': 'Аккаунт не найден. Зарегистрируйтесь',
         'auth/wrong-password': 'Неверный пароль',
-        'auth/invalid-credential': 'Неверные данные'
+        'auth/invalid-credential': 'Неверный email или пароль',
+        'auth/too-many-requests': 'Слишком много попыток. Подождите',
+        'auth/network-request-failed': 'Ошибка сети. Проверьте интернет',
+        'auth/user-disabled': 'Аккаунт заблокирован'
     };
-    return errors[code] || 'Ошибка авторизации';
+    return errors[code] || 'Ошибка: ' + code;
 }
 
 // Username
@@ -273,26 +284,58 @@ async function searchChats(query) {
     const usersSnap = await db.ref('users').once('value');
     const users = usersSnap.val() || {};
     
-    const results = Object.values(users).filter(u => {
+    const userResults = Object.values(users).filter(u => {
         if (u.uid === currentUser.uid) return false;
         const name = (u.displayName || '').toLowerCase();
         const uname = (u.username || '').toLowerCase();
         return isUsername ? uname.includes(query) : (name.includes(query) || uname.includes(query));
     });
     
-    renderSearchResults(results);
+    // Search public channels
+    const chatsSnap = await db.ref('chats').once('value');
+    const chats = chatsSnap.val() || {};
+    
+    const channelResults = Object.entries(chats).filter(([id, chat]) => {
+        if (chat.type !== 'channel' || !chat.isPublic) return false;
+        const name = (chat.name || '').toLowerCase();
+        const link = (chat.link || '').toLowerCase();
+        return name.includes(query) || link.includes(query);
+    }).map(([id, chat]) => ({ ...chat, chatId: id, isChannel: true }));
+    
+    renderSearchResults(userResults, channelResults);
 }
 
-function renderSearchResults(results) {
+async function renderSearchResults(userResults, channelResults = []) {
     const list = $('chatsList');
     
-    if (!results.length) {
+    if (!userResults.length && !channelResults.length) {
         list.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>Не найдено</p></div>';
         return;
     }
     
     list.innerHTML = '';
-    results.forEach(user => {
+    
+    // Render channels first
+    for (const channel of channelResults) {
+        const div = document.createElement('div');
+        div.className = 'chat-item';
+        div.innerHTML = `
+            <div class="avatar channel"><i class="fas fa-bullhorn"></i></div>
+            <div class="chat-info">
+                <div class="chat-name"><span>${esc(channel.name)}</span></div>
+                <div class="chat-preview">${channel.subscribersCount || 0} подписчиков</div>
+            </div>
+            <button class="add-contact-btn" onclick="event.stopPropagation(); joinChannel('${channel.chatId}')" title="Подписаться">
+                <i class="fas fa-plus"></i>
+            </button>
+        `;
+        div.onclick = () => joinChannel(channel.chatId);
+        list.appendChild(div);
+    }
+    
+    // Render users
+    for (const user of userResults) {
+        const isInContacts = await isContact(user.uid);
         const div = document.createElement('div');
         div.className = 'chat-item';
         div.innerHTML = `
@@ -301,10 +344,13 @@ function renderSearchResults(results) {
                 <div class="chat-name"><span>${esc(user.displayName || user.username)}</span></div>
                 <div class="chat-preview">@${esc(user.username)}</div>
             </div>
+            <button class="add-contact-btn ${isInContacts ? 'added' : ''}" data-user='${JSON.stringify({uid: user.uid, username: user.username, displayName: user.displayName})}' onclick="event.stopPropagation(); ${isInContacts ? '' : `addContact(this.dataset.user)`}" title="${isInContacts ? 'В контактах' : 'Добавить в контакты'}">
+                <i class="fas fa-${isInContacts ? 'check' : 'user-plus'}"></i>
+            </button>
         `;
         div.onclick = () => startPrivateChat(user);
         list.appendChild(div);
-    });
+    }
 }
 
 async function searchUsers(query, containerId, forGroup = false) {
@@ -391,8 +437,8 @@ function loadChats() {
             div.className = 'chat-item' + (currentChatId === chatId ? ' active' : '');
             div.dataset.chatId = chatId;
             
-            const avatarClass = chat.type === 'group' ? 'group' : chat.type === 'channel' ? 'channel' : '';
-            const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : 'user';
+            const avatarClass = chat.type === 'group' ? 'group' : chat.type === 'channel' ? 'channel' : chat.type === 'saved' ? 'saved' : '';
+            const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : chat.type === 'saved' ? 'bookmark' : 'user';
             const unread = chat.unread > 0 ? `<span class="unread-badge">${chat.unread}</span>` : '';
             
             div.innerHTML = `
@@ -481,6 +527,89 @@ async function createGroup() {
     showToast('Группа создана!');
 }
 
+// Join channel
+async function joinChannel(channelId) {
+    const chatSnap = await db.ref('chats/' + channelId).once('value');
+    const channel = chatSnap.val();
+    if (!channel) return showToast('Канал не найден');
+    
+    // Check if already subscribed
+    const memberSnap = await db.ref(`chats/${channelId}/members/${currentUser.uid}`).once('value');
+    if (memberSnap.exists()) {
+        // Already subscribed, just open
+        openChat(channelId, { type: 'channel', name: channel.name });
+        return;
+    }
+    
+    // Subscribe
+    await db.ref(`chats/${channelId}/members/${currentUser.uid}`).set({
+        role: 'subscriber',
+        joinedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    
+    await db.ref(`chats/${channelId}/subscribersCount`).set(firebase.database.ServerValue.increment(1));
+    
+    await db.ref(`userChats/${currentUser.uid}/${channelId}`).set({
+        type: 'channel',
+        name: channel.name,
+        lastMessage: '',
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        unread: 0
+    });
+    
+    showToast('Вы подписались на канал!');
+    loadChats();
+    openChat(channelId, { type: 'channel', name: channel.name });
+}
+
+window.joinChannel = joinChannel;
+
+// Leave chat (group/channel)
+async function leaveChat(chatId, type) {
+    const confirmMsg = type === 'channel' ? 'Отписаться от канала?' : 'Покинуть группу?';
+    if (!confirm(confirmMsg)) return;
+    
+    // Remove from members
+    await db.ref(`chats/${chatId}/members/${currentUser.uid}`).remove();
+    
+    // Update subscribers count for channels
+    if (type === 'channel') {
+        await db.ref(`chats/${chatId}/subscribersCount`).set(firebase.database.ServerValue.increment(-1));
+    }
+    
+    // Remove from user's chats
+    await db.ref(`userChats/${currentUser.uid}/${chatId}`).remove();
+    
+    closeAllModals();
+    closeChat();
+    $('noChatSelected').classList.remove('hidden');
+    $('activeChat').classList.add('hidden');
+    
+    showToast(type === 'channel' ? 'Вы отписались от канала' : 'Вы покинули группу');
+    loadChats();
+}
+
+window.leaveChat = leaveChat;
+
+// Saved Messages (Избранное)
+async function openSavedMessages() {
+    const savedChatId = 'saved_' + currentUser.uid;
+    
+    // Create saved messages chat if not exists
+    const chatRef = await db.ref(`userChats/${currentUser.uid}/${savedChatId}`).once('value');
+    if (!chatRef.exists()) {
+        await db.ref(`userChats/${currentUser.uid}/${savedChatId}`).set({
+            type: 'saved',
+            name: 'Избранное',
+            lastMessage: '',
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            unread: 0
+        });
+    }
+    
+    openChat(savedChatId, { type: 'saved', name: 'Избранное' });
+}
+
 // Create channel
 async function createChannel() {
     const name = $('channelNameInput').value.trim();
@@ -540,14 +669,18 @@ function openChat(chatId, chat) {
     // Set header
     $('chatUserName').textContent = chat.name || 'Чат';
     
-    const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : 'user';
+    const icon = chat.type === 'group' ? 'users' : chat.type === 'channel' ? 'bullhorn' : chat.type === 'saved' ? 'bookmark' : 'user';
     $('chatAvatar').innerHTML = `<i class="fas fa-${icon}"></i>`;
     if (chat.type === 'group') $('chatAvatar').style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
     else if (chat.type === 'channel') $('chatAvatar').style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+    else if (chat.type === 'saved') $('chatAvatar').style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
     else $('chatAvatar').style.background = '';
     
     // Status
-    if (chat.type === 'private' && chat.oderId) {
+    if (chat.type === 'saved') {
+        $('chatUserStatus').textContent = 'Ваши сохранённые сообщения';
+        $('chatUserStatus').className = 'status';
+    } else if (chat.type === 'private' && chat.oderId) {
         db.ref('users/' + chat.oderId).on('value', snap => {
             const u = snap.val();
             if (u) {
@@ -663,7 +796,9 @@ function sendMessage() {
     });
     
     // Update for partner/members
-    if (currentChatData?.type === 'private' && currentChatData.oderId) {
+    if (currentChatData?.type === 'saved') {
+        // Saved messages - no need to notify anyone
+    } else if (currentChatData?.type === 'private' && currentChatData.oderId) {
         db.ref(`userChats/${currentChatData.oderId}/${currentChatId}`).update({
             lastMessage: text,
             timestamp: firebase.database.ServerValue.TIMESTAMP,
@@ -715,21 +850,49 @@ async function deleteChat() {
 }
 
 async function viewProfile() {
-    if (!currentChatData || currentChatData.type !== 'private') return;
+    if (!currentChatData) return;
     
-    const snap = await db.ref('users/' + currentChatData.oderId).once('value');
-    const user = snap.val();
-    if (!user) return;
-    
-    $('profileName').textContent = user.displayName || user.username;
-    $('profileUsername').textContent = '@' + user.username;
-    $('profileBio').textContent = user.bio || '';
-    $('profileStatus').textContent = user.online ? 'в сети' : formatLastSeen(user.lastSeen);
-    $('profileStatus').className = 'status' + (user.online ? ' online' : '');
-    
-    $('sendMessageBtn').onclick = () => closeAllModals();
-    
-    openModal('userProfileModal');
+    if (currentChatData.type === 'private') {
+        const snap = await db.ref('users/' + currentChatData.oderId).once('value');
+        const user = snap.val();
+        if (!user) return;
+        
+        $('profileName').textContent = user.displayName || user.username;
+        $('profileUsername').textContent = '@' + user.username;
+        $('profileBio').textContent = user.bio || '';
+        $('profileStatus').textContent = user.online ? 'в сети' : formatLastSeen(user.lastSeen);
+        $('profileStatus').className = 'status' + (user.online ? ' online' : '');
+        
+        $('sendMessageBtn').onclick = () => closeAllModals();
+        $('sendMessageBtn').innerHTML = '<i class="fas fa-comment"></i> Написать';
+        
+        openModal('userProfileModal');
+    } else if (currentChatData.type === 'group' || currentChatData.type === 'channel') {
+        const snap = await db.ref('chats/' + currentChatId).once('value');
+        const chat = snap.val();
+        if (!chat) return;
+        
+        $('profileName').textContent = chat.name;
+        $('profileUsername').textContent = chat.type === 'channel' && chat.link ? '@' + chat.link : '';
+        $('profileBio').textContent = chat.description || '';
+        
+        const membersCount = chat.type === 'channel' ? (chat.subscribersCount || 0) : Object.keys(chat.members || {}).length;
+        const label = chat.type === 'channel' ? 'подписчик' : 'участник';
+        $('profileStatus').textContent = `${membersCount} ${label}${getPlural(membersCount, '', 'а', 'ов')}`;
+        $('profileStatus').className = 'status';
+        
+        // Change avatar icon
+        const avatarEl = document.querySelector('#userProfileModal .profile-avatar');
+        avatarEl.innerHTML = `<i class="fas fa-${chat.type === 'channel' ? 'bullhorn' : 'users'}"></i>`;
+        avatarEl.style.background = chat.type === 'channel' 
+            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+            : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+        
+        $('sendMessageBtn').innerHTML = '<i class="fas fa-sign-out-alt"></i> Покинуть';
+        $('sendMessageBtn').onclick = () => leaveChat(currentChatId, chat.type);
+        
+        openModal('userProfileModal');
+    }
 }
 
 // Settings
@@ -854,5 +1017,106 @@ function autoResizeTextarea() {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-// Make removeMember global
+// Tabs
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.dataset.tab === tabName);
+    });
+    
+    if (tabName === 'contacts') {
+        loadContacts();
+    } else {
+        loadChats();
+    }
+}
+
+// Contacts
+async function loadContacts() {
+    const snap = await db.ref('contacts/' + currentUser.uid).once('value');
+    const contacts = snap.val();
+    const list = $('contactsList');
+    
+    if (!contacts) {
+        list.innerHTML = '<div class="empty-state"><i class="fas fa-user-plus"></i><p>Нет контактов</p><span>Найдите пользователя через поиск и добавьте в контакты</span></div>';
+        return;
+    }
+    
+    list.innerHTML = '';
+    
+    for (const [uid, contact] of Object.entries(contacts)) {
+        const userSnap = await db.ref('users/' + uid).once('value');
+        const user = userSnap.val();
+        if (!user) continue;
+        
+        const div = document.createElement('div');
+        div.className = 'contact-item';
+        div.innerHTML = `
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <div class="contact-info">
+                <div class="contact-name">${esc(user.displayName || user.username)}</div>
+                <div class="contact-username">@${esc(user.username)}</div>
+                <div class="contact-status ${user.online ? 'online' : ''}">${user.online ? 'в сети' : formatLastSeen(user.lastSeen)}</div>
+            </div>
+            <div class="contact-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); removeContact('${uid}')" title="Удалить">
+                    <i class="fas fa-user-minus"></i>
+                </button>
+            </div>
+        `;
+        div.onclick = () => startPrivateChat(user);
+        list.appendChild(div);
+    }
+}
+
+async function addContact(user) {
+    if (typeof user === 'string') {
+        user = JSON.parse(user);
+    }
+    await db.ref(`contacts/${currentUser.uid}/${user.uid}`).set({
+        addedAt: firebase.database.ServerValue.TIMESTAMP,
+        username: user.username,
+        displayName: user.displayName || user.username
+    });
+    showToast(`${user.displayName || user.username} добавлен в контакты`);
+    // Refresh search results
+    const query = $('searchInput').value;
+    if (query) searchChats(query);
+}
+
+async function removeContact(uid) {
+    if (!confirm('Удалить из контактов?')) return;
+    await db.ref(`contacts/${currentUser.uid}/${uid}`).remove();
+    loadContacts();
+    showToast('Контакт удалён');
+}
+
+async function isContact(uid) {
+    const snap = await db.ref(`contacts/${currentUser.uid}/${uid}`).once('value');
+    return snap.exists();
+}
+
+// Load users for group creation
+async function loadUsersForGroup() {
+    selectedMembers = [];
+    $('selectedMembers').innerHTML = '';
+    $('groupMembersResults').innerHTML = '';
+    $('groupMembersSearch').value = '';
+}
+
+// Make functions global
+// Copy username
+function copyUsername(username) {
+    navigator.clipboard.writeText(username).then(() => {
+        showToast('Username скопирован!');
+    }).catch(() => {
+        showToast('Не удалось скопировать');
+    });
+}
+
 window.removeMember = removeMember;
+window.removeContact = removeContact;
+window.addContact = addContact;
+window.copyUsername = copyUsername;
