@@ -1,12 +1,12 @@
 // Firebase Configuration - ЗАМЕНИ НА СВОИ ДАННЫЕ
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyA8UMjDquPOSEvcdJnxmVwOLx-yN7PX50s",
+  authDomain: "arbchat-e3314.firebaseapp.com",
+  projectId: "arbchat-e3314",
+  storageBucket: "arbchat-e3314.firebasestorage.app",
+  messagingSenderId: "257751213924",
+  appId: "1:257751213924:web:0e70d5b8c2e9c093997c71",
+  measurementId: "G-0YC7TKWJSQ"
 };
 
 // Initialize Firebase
@@ -742,3 +742,4 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('soundToggle').checked = soundEnabled;
     document.getElementById('notifToggle').checked = notifEnabled;
 });
+
