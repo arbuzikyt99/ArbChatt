@@ -90,13 +90,39 @@
                     <input type="text" id="searchInput" class="search-input" placeholder="Поиск по @username или имени...">
                 </div>
 
+                <!-- Tabs -->
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="chats">
+                        <i class="fas fa-comment"></i> Чаты
+                    </button>
+                    <button class="tab-btn" data-tab="contacts">
+                        <i class="fas fa-address-book"></i> Контакты
+                    </button>
+                </div>
+
                 <!-- Chats List -->
-                <div id="chatsList" class="chats-list">
+                <div id="chatsList" class="chats-list tab-content active" data-tab="chats">
                     <div class="empty-state">
                         <i class="fas fa-comment-dots"></i>
                         <p>Нет чатов</p>
                         <span>Найдите пользователя чтобы начать</span>
                     </div>
+                </div>
+
+                <!-- Contacts List -->
+                <div id="contactsList" class="chats-list tab-content" data-tab="contacts">
+                    <div class="empty-state">
+                        <i class="fas fa-user-plus"></i>
+                        <p>Нет контактов</p>
+                        <span>Добавьте контакты через поиск</span>
+                    </div>
+                </div>
+
+                <!-- Logout Button -->
+                <div class="sidebar-footer">
+                    <button class="logout-sidebar-btn" id="logoutSidebarBtn">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </button>
                 </div>
             </div>
 
@@ -384,7 +410,7 @@
                     <i class="fas fa-user"></i>
                 </div>
                 <h3 id="profileName">Имя пользователя</h3>
-                <p id="profileUsername" class="username">@username</p>
+                <p id="profileUsername" class="username copyable" onclick="copyUsername(this.textContent)" title="Нажмите чтобы скопировать">@username</p>
                 <p id="profileBio" class="bio"></p>
                 <p id="profileStatus" class="status"></p>
                 <div class="profile-actions">
