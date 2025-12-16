@@ -618,6 +618,49 @@ async function leaveChat(chatId, type) {
 
 window.leaveChat = leaveChat;
 
+// Menu functions
+function toggleMainMenu() {
+    $('mainMenuModal').classList.toggle('hidden');
+}
+
+function openCreateGroup() {
+    closeAllModals();
+    openModal('createGroupModal');
+    loadUsersForGroup();
+}
+
+function openCreateChannel() {
+    closeAllModals();
+    openModal('createChannelModal');
+}
+
+function openContacts() {
+    closeAllModals();
+    switchTab('contacts');
+}
+
+function openSettings() {
+    closeAllModals();
+    openModal('settingsModal');
+    loadSettings();
+}
+
+// Make functions global
+window.toggleMainMenu = toggleMainMenu;
+window.openCreateGroup = openCreateGroup;
+window.openCreateChannel = openCreateChannel;
+window.openContacts = openContacts;
+window.openSettings = openSettings;
+window.saveUsername = saveUsername;
+
+function openNewChat() {
+    openModal('newChatModal');
+}
+
+window.openNewChat = openNewChat;
+window.switchTab = switchTab;
+window.logout = logout;
+
 // Saved Messages (Избранное)
 async function openSavedMessages() {
     const savedChatId = 'saved_' + currentUser.uid;
