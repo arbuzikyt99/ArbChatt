@@ -660,6 +660,8 @@ function openNewChat() {
 window.openNewChat = openNewChat;
 window.switchTab = switchTab;
 window.logout = logout;
+window.login = login;
+window.register = register;
 
 // Saved Messages (Избранное)
 async function openSavedMessages() {
