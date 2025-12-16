@@ -27,12 +27,12 @@
                 </div>
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="password" class="glass-input" placeholder="Пароль">
+                    <input type="password" id="password" class="glass-input" placeholder="Пароль" onkeypress="if(event.key==='Enter') login()">
                 </div>
-                <button id="loginBtn" class="glass-btn primary full-width">
+                <button id="loginBtn" class="glass-btn primary full-width" onclick="login()">
                     <i class="fas fa-sign-in-alt"></i> Войти
                 </button>
-                <button id="registerBtn" class="glass-btn full-width">
+                <button id="registerBtn" class="glass-btn full-width" onclick="register()">
                     <i class="fas fa-user-plus"></i> Регистрация
                 </button>
             </div>
