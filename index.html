@@ -40,6 +40,26 @@
         </div>
     </div>
 
+    <!-- Setup Username Screen -->
+    <div id="usernameScreen" class="screen hidden">
+        <div class="glass-card auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-at"></i>
+            </div>
+            <h1 class="logo">Выберите username</h1>
+            <p class="subtitle">Ваш уникальный идентификатор</p>
+            
+            <div class="input-group">
+                <i class="fas fa-at"></i>
+                <input type="text" id="usernameInput" class="glass-input" placeholder="username">
+            </div>
+            <p id="usernameHint" class="hint">Минимум 5 символов, только буквы, цифры и _</p>
+            <button id="saveUsernameBtn" class="glass-btn primary full-width">
+                <i class="fas fa-check"></i> Сохранить
+            </button>
+        </div>
+    </div>
+
     <!-- Main Chat Screen -->
     <div id="chatScreen" class="screen hidden">
         <div class="app-container">
@@ -52,11 +72,14 @@
                     </div>
                     <div class="user-info-header">
                         <span id="userName">Пользователь</span>
-                        <span id="userStatus" class="status online">В сети</span>
+                        <span id="userUsername" class="username">@username</span>
                     </div>
                     <div class="header-actions">
-                        <button class="icon-btn" id="settingsBtn" title="Настройки">
-                            <i class="fas fa-cog"></i>
+                        <button class="icon-btn" id="newChatBtn" title="Новый чат">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="icon-btn" id="menuBtn" title="Меню">
+                            <i class="fas fa-bars"></i>
                         </button>
                     </div>
                 </div>
@@ -64,21 +87,8 @@
                 <!-- Search -->
                 <div class="search-container">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Поиск пользователей...">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по @username или имени...">
                 </div>
-
-                <!-- Tabs -->
-                <div class="tabs">
-                    <button class="tab active" data-tab="chats">
-                        <i class="fas fa-comments"></i> Чаты
-                    </button>
-                    <button class="tab" data-tab="contacts">
-                        <i class="fas fa-users"></i> Контакты
-                    </button>
-                </div>
-
-                <!-- Search Results -->
-                <div id="searchResults" class="search-results hidden"></div>
 
                 <!-- Chats List -->
                 <div id="chatsList" class="chats-list">
@@ -87,16 +97,6 @@
                         <p>Нет чатов</p>
                         <span>Найдите пользователя чтобы начать</span>
                     </div>
-                </div>
-
-                <!-- Contacts List -->
-                <div id="contactsList" class="contacts-list hidden"></div>
-
-                <!-- Logout -->
-                <div class="sidebar-footer">
-                    <button id="logoutBtn" class="glass-btn danger full-width">
-                        <i class="fas fa-sign-out-alt"></i> Выйти
-                    </button>
                 </div>
             </div>
 
@@ -121,16 +121,13 @@
                         <div class="chat-user-avatar" id="chatAvatar">
                             <i class="fas fa-user"></i>
                         </div>
-                        <div class="chat-user-info">
+                        <div class="chat-user-info" id="chatHeaderInfo">
                             <span id="chatUserName">Имя пользователя</span>
                             <span id="chatUserStatus" class="status">был(а) недавно</span>
                         </div>
                         <div class="chat-actions">
-                            <button class="icon-btn" id="callBtn" title="Позвонить">
-                                <i class="fas fa-phone"></i>
-                            </button>
-                            <button class="icon-btn" id="videoBtn" title="Видеозвонок">
-                                <i class="fas fa-video"></i>
+                            <button class="icon-btn" id="searchMsgBtn" title="Поиск">
+                                <i class="fas fa-search"></i>
                             </button>
                             <button class="icon-btn" id="chatMenuBtn" title="Меню">
                                 <i class="fas fa-ellipsis-v"></i>
@@ -149,7 +146,7 @@
                             <i class="fas fa-paperclip"></i>
                         </button>
                         <div class="input-wrapper">
-                            <input type="text" id="messageInput" class="message-input" placeholder="Написать сообщение...">
+                            <textarea id="messageInput" class="message-input" placeholder="Сообщение..." rows="1"></textarea>
                             <button class="icon-btn emoji-btn" id="emojiBtn" title="Эмодзи">
                                 <i class="fas fa-smile"></i>
                             </button>
@@ -166,15 +163,137 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal hidden">
+    <!-- Main Menu Modal -->
+    <div id="mainMenuModal" class="sidebar-menu hidden">
+        <div class="menu-header">
+            <div class="menu-user-avatar"><i class="fas fa-user"></i></div>
+            <div class="menu-user-info">
+                <span id="menuUserName">Пользователь</span>
+                <span id="menuUserUsername" class="username">@username</span>
+            </div>
+        </div>
+        <div class="menu-items">
+            <button class="menu-item" id="newGroupBtn">
+                <i class="fas fa-users"></i> Создать группу
+            </button>
+            <button class="menu-item" id="newChannelBtn">
+                <i class="fas fa-bullhorn"></i> Создать канал
+            </button>
+            <button class="menu-item" id="contactsBtn">
+                <i class="fas fa-address-book"></i> Контакты
+            </button>
+            <button class="menu-item" id="savedBtn">
+                <i class="fas fa-bookmark"></i> Избранное
+            </button>
+            <button class="menu-item" id="settingsMenuBtn">
+                <i class="fas fa-cog"></i> Настройки
+            </button>
+            <div class="menu-divider"></div>
+            <button class="menu-item danger" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
+        </div>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div id="newChatModal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> Настройки</h2>
-                <button class="icon-btn close-modal">
-                    <i class="fas fa-times"></i>
+                <h2><i class="fas fa-edit"></i> Новый чат</h2>
+                <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="newChatSearch" class="search-input" placeholder="Поиск по @username...">
+                </div>
+                <div id="newChatResults" class="search-results-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="createGroupModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2><i class="fas fa-users"></i> Новая группа</h2>
+                <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Название группы</label>
+                    <input type="text" id="groupNameInput" class="glass-input" placeholder="Введите название...">
+                </div>
+                <div class="input-group">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="groupDescInput" class="glass-input" placeholder="Описание группы..." rows="2"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Добавить участников</label>
+                    <input type="text" id="groupMembersSearch" class="glass-input" placeholder="Поиск по @username...">
+                </div>
+                <div id="selectedMembers" class="selected-members"></div>
+                <div id="groupMembersResults" class="search-results-list"></div>
+                <button id="createGroupBtn" class="glass-btn primary full-width">
+                    <i class="fas fa-check"></i> Создать группу
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div id="createChannelModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2><i class="fas fa-bullhorn"></i> Новый канал</h2>
+                <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Название канала</label>
+                    <input type="text" id="channelNameInput" class="glass-input" placeholder="Введите название...">
+                </div>
+                <div class="input-group">
+                    <label>Описание</label>
+                    <textarea id="channelDescInput" class="glass-input" placeholder="О чём этот канал..." rows="2"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Тип канала</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="channelType" value="public" checked>
+                            <span>Публичный</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="channelType" value="private">
+                            <span>Приватный</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="input-group" id="channelLinkGroup">
+                    <label>Ссылка на канал</label>
+                    <div class="link-input">
+                        <span>arbchat.me/</span>
+                        <input type="text" id="channelLinkInput" class="glass-input" placeholder="myChannel">
+                    </div>
+                </div>
+                <button id="createChannelBtn" class="glass-btn primary full-width">
+                    <i class="fas fa-check"></i> Создать канал
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card large">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Настройки</h2>
+                <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <!-- Profile Section -->
@@ -194,33 +313,19 @@
                             <input type="text" id="displayNameInput" class="glass-input" placeholder="Ваше имя">
                         </div>
                         <div class="input-group">
-                            <label>Статус</label>
-                            <input type="text" id="statusInput" class="glass-input" placeholder="Ваш статус">
+                            <label>Username</label>
+                            <div class="username-input">
+                                <span>@</span>
+                                <input type="text" id="editUsernameInput" class="glass-input" placeholder="username">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>О себе</label>
+                            <textarea id="bioInput" class="glass-input" placeholder="Расскажите о себе..." rows="2"></textarea>
                         </div>
                         <button class="glass-btn primary" id="saveProfileBtn">
                             <i class="fas fa-save"></i> Сохранить
                         </button>
-                    </div>
-                </div>
-
-                <!-- Appearance Section -->
-                <div class="settings-section">
-                    <h3><i class="fas fa-palette"></i> Внешний вид</h3>
-                    <div class="setting-item">
-                        <span>Тема</span>
-                        <select id="themeSelect" class="glass-select">
-                            <option value="dark">Тёмная</option>
-                            <option value="light">Светлая</option>
-                            <option value="purple">Фиолетовая</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <span>Размер шрифта</span>
-                        <select id="fontSizeSelect" class="glass-select">
-                            <option value="small">Маленький</option>
-                            <option value="medium" selected>Средний</option>
-                            <option value="large">Большой</option>
-                        </select>
                     </div>
                 </div>
 
@@ -235,7 +340,7 @@
                         </label>
                     </div>
                     <div class="setting-item">
-                        <span>Уведомления на рабочем столе</span>
+                        <span>Уведомления</span>
                         <label class="toggle">
                             <input type="checkbox" id="notifToggle">
                             <span class="toggle-slider"></span>
@@ -254,29 +359,61 @@
                         </label>
                     </div>
                     <div class="setting-item">
-                        <span>Читать сообщения</span>
-                        <label class="toggle">
-                            <input type="checkbox" id="readToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
+                        <span>Кто видит мой номер</span>
+                        <select id="phonePrivacy" class="glass-select">
+                            <option value="everyone">Все</option>
+                            <option value="contacts">Мои контакты</option>
+                            <option value="nobody">Никто</option>
+                        </select>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Chat Menu Modal -->
+    <!-- User Profile Modal -->
+    <div id="userProfileModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2>Профиль</h2>
+                <button class="icon-btn close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body profile-view">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h3 id="profileName">Имя пользователя</h3>
+                <p id="profileUsername" class="username">@username</p>
+                <p id="profileBio" class="bio"></p>
+                <p id="profileStatus" class="status"></p>
+                <div class="profile-actions">
+                    <button class="glass-btn primary" id="sendMessageBtn">
+                        <i class="fas fa-comment"></i> Написать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Menu Dropdown -->
     <div id="chatMenuModal" class="dropdown-menu hidden">
-        <button class="dropdown-item" id="clearChatBtn">
-            <i class="fas fa-trash"></i> Очистить чат
+        <button class="dropdown-item" id="viewProfileBtn">
+            <i class="fas fa-user"></i> Профиль
         </button>
-        <button class="dropdown-item" id="blockUserBtn">
-            <i class="fas fa-ban"></i> Заблокировать
+        <button class="dropdown-item" id="muteBtn">
+            <i class="fas fa-bell-slash"></i> Без звука
+        </button>
+        <button class="dropdown-item" id="clearChatBtn">
+            <i class="fas fa-broom"></i> Очистить чат
         </button>
         <button class="dropdown-item danger" id="deleteChatBtn">
-            <i class="fas fa-trash-alt"></i> Удалить чат
+            <i class="fas fa-trash"></i> Удалить чат
         </button>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
 
     <!-- Notification Sound -->
     <audio id="notificationSound" preload="auto">
