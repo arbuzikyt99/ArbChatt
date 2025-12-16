@@ -35,6 +35,8 @@ auth.onAuthStateChanged(async user => {
         
         if (!currentUserData?.username) {
             showScreen('usernameScreen');
+            // Bind username save button
+            $('saveUsernameBtn').onclick = saveUsername;
         } else {
             showScreen('chatScreen');
             initApp();
@@ -43,6 +45,10 @@ auth.onAuthStateChanged(async user => {
         currentUser = null;
         currentUserData = null;
         showScreen('authScreen');
+        // Bind auth buttons
+        $('loginBtn').onclick = login;
+        $('registerBtn').onclick = register;
+        $('password').onkeypress = e => e.key === 'Enter' && login();
     }
 });
 
