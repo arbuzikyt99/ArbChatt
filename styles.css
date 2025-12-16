@@ -1,0 +1,397 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+    z-index: -1;
+}
+
+.background::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse1 8s ease-in-out infinite;
+}
+
+.background::after {
+    content: '';
+    position: absolute;
+    bottom: 10%;
+    right: 15%;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse2 10s ease-in-out infinite;
+}
+
+@keyframes pulse1 {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+@keyframes pulse2 {
+    0%, 100% { transform: scale(1.1); opacity: 0.6; }
+    50% { transform: scale(0.9); opacity: 0.4; }
+}
+
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Dark Glassmorphism */
+.glass-card {
+    background: rgba(15, 15, 25, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-input {
+    width: 100%;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #e2e8f0;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.glass-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.glass-btn {
+    padding: 14px 28px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.glass-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.glass-btn.primary {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.glass-btn.primary:hover {
+    background: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 5px 25px rgba(99, 102, 241, 0.3);
+}
+
+.glass-btn.small {
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+/* Auth Card */
+.auth-card {
+    padding: 50px 40px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.logo {
+    font-size: 42px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 35px;
+}
+
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.error {
+    color: #f87171;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+
+/* Chat Container */
+.chat-container {
+    display: flex;
+    width: 95%;
+    max-width: 1200px;
+    height: 90vh;
+    gap: 20px;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 320px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.sidebar-header h2 {
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 24px;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.user-info {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.search-box .glass-input {
+    flex: 1;
+    padding: 10px 14px;
+}
+
+.search-results {
+    margin-bottom: 15px;
+}
+
+.search-result-item, .chat-item {
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #e2e8f0;
+}
+
+.search-result-item:hover, .chat-item:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.chat-item.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.chats-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.empty-text {
+    color: rgba(255, 255, 255, 0.3);
+    text-align: center;
+    padding: 20px;
+}
+
+/* Chat Area */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.no-chat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+    font-weight: 500;
+    font-size: 18px;
+}
+
+.messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    color: #e2e8f0;
+    word-wrap: break-word;
+}
+
+.message.sent {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(139, 92, 246, 0.4) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-bottom-right-radius: 4px;
+}
+
+.message.received {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom-left-radius: 4px;
+}
+
+.message-time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 5px;
+}
+
+.message-input {
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.message-input .glass-input {
+    flex: 1;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .chat-container {
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+        gap: 0;
+        padding: 10px;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .chat-area {
+        flex: 1;
+        border-radius: 0 0 15px 15px;
+    }
+}

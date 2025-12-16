@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArbChat - Мессенджер</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background"></div>
+    
+    <!-- Auth Screen -->
+    <div id="authScreen" class="screen">
+        <div class="glass-card auth-card">
+            <h1 class="logo">ArbChat</h1>
+            <p class="subtitle">Безопасный мессенджер</p>
+            
+            <div id="loginForm">
+                <input type="email" id="email" class="glass-input" placeholder="Email">
+                <input type="password" id="password" class="glass-input" placeholder="Пароль">
+                <button id="loginBtn" class="glass-btn primary">Войти</button>
+                <button id="registerBtn" class="glass-btn">Регистрация</button>
+            </div>
+            <p id="authError" class="error"></p>
+        </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chatScreen" class="screen hidden">
+        <div class="chat-container">
+            <!-- Sidebar -->
+            <div class="glass-card sidebar">
+                <div class="sidebar-header">
+                    <h2>ArbChat</h2>
+                    <button id="logoutBtn" class="icon-btn" title="Выйти">⏻</button>
+                </div>
+                <div class="user-info">
+                    <span id="currentUser"></span>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchUser" class="glass-input" placeholder="Найти пользователя...">
+                    <button id="searchBtn" class="glass-btn small">🔍</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+                <div class="chats-list" id="chatsList">
+                    <p class="empty-text">Начните новый чат</p>
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="glass-card chat-area">
+                <div id="noChatSelected" class="no-chat">
+                    <p>Выберите чат или найдите пользователя</p>
+                </div>
+                <div id="chatContent" class="chat-content hidden">
+                    <div class="chat-header">
+                        <span id="chatPartnerName"></span>
+                    </div>
+                    <div class="messages" id="messages"></div>
+                    <div class="message-input">
+                        <input type="text" id="messageInput" class="glass-input" placeholder="Сообщение...">
+                        <button id="sendBtn" class="glass-btn primary">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
