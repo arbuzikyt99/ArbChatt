@@ -215,6 +215,7 @@ textarea.glass-input {
     transform: translateY(-50%);
     color: var(--text-secondary);
     z-index: 1;
+    pointer-events: none;
 }
 
 .input-group > i + .glass-input { padding-left: 42px; }
