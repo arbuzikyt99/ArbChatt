@@ -247,16 +247,20 @@ function getAuthError(code) {
 
 // Username
 async function saveUsername() {
+    console.log('saveUsername called');
     const username = $('usernameInput').value.trim().toLowerCase();
+    console.log('Username:', username);
     const btn = $('saveUsernameBtn');
     const hint = $('usernameHint');
     
     if (!/^[a-z0-9_]{5,20}$/.test(username)) {
+        console.log('Username validation failed');
         hint.textContent = 'Только буквы, цифры и _ (5-20 символов)';
         hint.style.color = 'var(--danger)';
         return;
     }
     
+    console.log('Username valid, proceeding...');
     try {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
