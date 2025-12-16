@@ -75,10 +75,10 @@
                         <span id="userUsername" class="username">@username</span>
                     </div>
                     <div class="header-actions">
-                        <button class="icon-btn" id="newChatBtn" title="Новый чат">
-                            <i class="fas fa-edit"></i>
+                        <button class="icon-btn" id="newChatBtn" title="Новый чат" onclick="openNewChat()">
+<i class="fas fa-edit"></i>
                         </button>
-                        <button class="icon-btn" id="menuBtn" title="Меню">
+                        <button class="icon-btn" id="menuBtn" title="Меню" onclick="toggleMainMenu()"></button>
                             <i class="fas fa-bars"></i>
                         </button>
                     </div>
@@ -92,10 +92,10 @@
 
                 <!-- Tabs -->
                 <div class="sidebar-tabs">
-                    <button class="tab-btn active" data-tab="chats">
+                    <button class="tab-btn active" data-tab="chats" onclick="switchTab('chats')">
                         <i class="fas fa-comment"></i> Чаты
                     </button>
-                    <button class="tab-btn" data-tab="contacts">
+                    <button class="tab-btn" data-tab="contacts" onclick="switchTab('contacts')"></button>
                         <i class="fas fa-address-book"></i> Контакты
                     </button>
                 </div>
@@ -120,7 +120,7 @@
 
                 <!-- Logout Button -->
                 <div class="sidebar-footer">
-                    <button class="logout-sidebar-btn" id="logoutSidebarBtn">
+                    <button class="logout-sidebar-btn" id="logoutSidebarBtn" onclick="logout()"></button>
                         <i class="fas fa-sign-out-alt"></i> Выйти
                     </button>
                 </div>
@@ -199,23 +199,23 @@
             </div>
         </div>
         <div class="menu-items">
-            <button class="menu-item" id="newGroupBtn">
+            <button class="menu-item" id="newGroupBtn" onclick="openCreateGroup()">
                 <i class="fas fa-users"></i> Создать группу
             </button>
-            <button class="menu-item" id="newChannelBtn">
+            <button class="menu-item" id="newChannelBtn" onclick="openCreateChannel()">
                 <i class="fas fa-bullhorn"></i> Создать канал
             </button>
-            <button class="menu-item" id="contactsBtn">
+            <button class="menu-item" id="contactsBtn" onclick="openContacts()">
                 <i class="fas fa-address-book"></i> Контакты
             </button>
-            <button class="menu-item" id="savedBtn">
+            <button class="menu-item" id="savedBtn" onclick="openSavedMessages()">
                 <i class="fas fa-bookmark"></i> Избранное
             </button>
-            <button class="menu-item" id="settingsMenuBtn">
+            <button class="menu-item" id="settingsMenuBtn" onclick="openSettings()"></button>
                 <i class="fas fa-cog"></i> Настройки
             </button>
             <div class="menu-divider"></div>
-            <button class="menu-item danger" id="logoutBtn">
+            <button class="menu-item danger" id="logoutBtn" onclick="logout()"></button>
                 <i class="fas fa-sign-out-alt"></i> Выйти
             </button>
         </div>
